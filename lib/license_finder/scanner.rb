@@ -5,7 +5,7 @@ module LicenseFinder
     PACKAGE_MANAGERS = [
       GoModules, GoDep, GoWorkspace, Go15VendorExperiment, Glide, Gvt, Govendor, Trash, Bundler, NPM, PNPM, Pip,
       Yarn, Bower, Maven, Gradle, CocoaPods, Rebar, Erlangmk, Nuget, Carthage, Mix, Conan, Sbt, Cargo, Dotnet, Composer, Pipenv,
-      Conda, Spm, Pub
+      Conda, Spm, Pub, Poetry
     ].freeze
 
     class << self
