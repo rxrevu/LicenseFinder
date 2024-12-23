@@ -49,6 +49,7 @@ module LicenseFinder
           :yarn_options,
           :pnpm_options,
           :pip_requirements_path,
+          :poetry_lock_path,
           :python_version,
           :rebar_command,
           :rebar_deps_dir,

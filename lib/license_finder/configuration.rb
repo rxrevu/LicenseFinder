@@ -109,6 +109,10 @@ module LicenseFinder
       get(:pip_requirements_path)
     end
 
+    def poetry_lock_path
+      get(:poetry_lock_path)
+    end
+
     def conda_bash_setup_script
       get(:conda_bash_setup_script)
     end
