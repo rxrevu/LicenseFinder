@@ -58,7 +58,7 @@ module LicenseFinder
         end
       end
 
-      it 'fetches each package identified in a Pipfile.lock' do
+      it 'fetches each package identified in a poetry.lock' do
         actual = subject.current_packages.map do |package|
           [package.name, package.version, package.licenses.map(&:name), package.groups]
         end
