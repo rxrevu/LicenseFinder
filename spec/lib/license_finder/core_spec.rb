@@ -43,6 +43,7 @@ module LicenseFinder
           npm_options: nil,
           yarn_options: nil,
           pip_requirements_path: nil,
+          poetry_lock_path: nil,
           python_version: nil,
           rebar_command: configuration.rebar_command,
           rebar_deps_dir: configuration.rebar_deps_dir,
