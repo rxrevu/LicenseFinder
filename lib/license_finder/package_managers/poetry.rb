@@ -43,7 +43,7 @@ module LicenseFinder
 
 
     def ignored_groups
-      @ignored_groups ||= []
+      @ignored_groups ||= Set.new
     end
 
     def poetry_lock
@@ -134,11 +134,12 @@ module LicenseFinder
     end
 
     def groups(package_name)
-      poetry_lock[:package].find { |package| package[:name] == package_name }[:groups] || []
+      (poetry_lock[:package].find { |package| package[:name] == package_name } || {})[:groups] || []
     end
 
     def license_info_from_installed_path(library)
       python_version, extracted_path = env_info
+
       install_path = Pathname.new(
         package_path(extracted_path, python_version, library[:name], library[:version])
       )
@@ -173,7 +174,7 @@ module LicenseFinder
     end
 
     def ignore_due_to_group?(package_name)
-      (groups(package_name) - ignored_groups).empty?
+      (Set.new(groups(package_name)) - ignored_groups).empty?
     end
   end
 end
