@@ -2,6 +2,7 @@
 
 require 'spec_helper'
 
+
 module LicenseFinder
   describe Poetry do
     subject { Poetry.new(options) }
@@ -73,21 +74,23 @@ module LicenseFinder
         OUTPUT
       end
 
+      let(:poetry_env_path) { fixture_path('poetry') }
+
       let(:poetry_env_info) do
         <<~OUTPUT
           Virtualenv
           Python:         3.12.7
           Implementation: CPython
-          Path:           /Users/ed/Library/Caches/pypoetry/virtualenvs/epa-insights-o1nysRTv-py3.12
-          Executable:     /Users/ed/Library/Caches/pypoetry/virtualenvs/epa-insights-o1nysRTv-py3.12/bin/python
+          Path:           #{poetry_env_path}
+          Executable:     #{poetry_env_path}bin/python
           Valid:          True
 
           Base
           Platform:   darwin
           OS:         posix
           Python:     3.12.7
-          Path:       /Users/ed/.asdf/installs/python/3.12.7
-          Executable: /Users/ed/.asdf/installs/python/3.12.7/bin/python3.12
+          Path:       /Users/name/.asdf/installs/python/3.12.7
+          Executable: /Users/name/.asdf/installs/python/3.12.7/bin/python3.12
 
         OUTPUT
       end
@@ -100,6 +103,31 @@ module LicenseFinder
           [package[:name], package[:version], package[:license], package[:groups]]
         end
         expect(actual).to match_array(expected)
+      end
+
+      context 'when github and pypi are not used' do
+        before do
+          dependencies.each do |item|
+            url = url_for(item[:name], item[:version])
+            stub_request(:get, url).to_return(status: 404, body: {}.to_json)
+          end
+        end
+
+        it 'uses the installed packages to find the licenses' do
+          actual = subject.current_packages.map do |package|
+            [package.name, package.version, package.licenses.map(&:name), package.groups]
+          end
+          expected = [
+            ['colorama', '0.4.6', ['unknown'], []],
+            ['iniconfig', '2.0.0', ['MIT'], %w[main dev]],
+            ['packaging', '24.2', ['Apache 2.0', 'Simplified BSD'], ['dev']],
+            ['pluggy', '1.5.0', ['MIT'], ['test']],
+            ['pytest', '8.3.4', ['MIT'], ['test']],
+            ['six', '1.17.0', ['MIT'], %w[main dev]]
+          ]
+
+          expect(actual).to match_array(expected)
+        end
       end
 
       context 'when the development dependencies are ignored' do
@@ -123,6 +151,5 @@ module LicenseFinder
         end
       end
     end
-
   end
 end
