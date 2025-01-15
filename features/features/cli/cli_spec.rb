@@ -50,12 +50,12 @@ describe 'License Finder command line executable' do
   end
 
   # Dep has been deprecated since 2020
-  xspecify 'displays an error if symlink to potential license file is dangling' do
-    project = LicenseFinder::TestingDSL::BrokenSymLinkDepProject.create
-    ENV['GOPATH'] = "#{project.project_dir}/gopath_dep"
-    developer.run_license_finder('gopath_dep/src/foo-dep')
-    expect(developer).to be_seeing_something_like %r{ERROR: .*my_app/gopath_dep/src/foo-dep/vendor/a/b/LICENSE does not exists}
-  end
+  # xspecify 'displays an error if symlink to potential license file is dangling' do
+  #   project = LicenseFinder::TestingDSL::BrokenSymLinkDepProject.create
+  #   ENV['GOPATH'] = "#{project.project_dir}/gopath_dep"
+  #   developer.run_license_finder('gopath_dep/src/foo-dep')
+  #   expect(developer).to be_seeing_something_like %r{ERROR: .*my_app/gopath_dep/src/foo-dep/vendor/a/b/LICENSE does not exists}
+  # end
 
   specify 'displays a warning if no package managers are active/installed' do
     developer.create_empty_project
