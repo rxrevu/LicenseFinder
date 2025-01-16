@@ -72,14 +72,23 @@ module LicenseFinder
       library_list.map do |library|
         next if ignore_due_to_group?(library[:name])
 
-        installed_license_info = license_info_from_installed_path(library)
+        pypi_definition = PyPI.definition(library[:name], library[:version])
+
+        puts("\n\t* * * * *\t#{library[:name]} =>? #{pypi_definition['name']}")
+
+        installed_license_info = license_info_from_installed_path(library, pypi_definition)
+
+        puts("\tInstalled License Info:\t#{installed_license_info}")
         next library.merge(installed_license_info) if installed_license_info
 
         pypi_definition = PyPI.definition(library[:name], library[:version])
 
         github_license_info = license_info_from_github(pypi_definition)
+
+        puts("\tGithub License Info:\t#{github_license_info}")
         next library.merge(github_license_info) if github_license_info
 
+        puts("\tPyPI License Info:\t#{pypi_definition}")
         library.merge(license_info_from_spec(pypi_definition))
       end
     end
@@ -137,11 +146,22 @@ module LicenseFinder
       (poetry_lock[:package].find { |package| package[:name] == package_name } || {})[:groups] || []
     end
 
-    def license_info_from_installed_path(library)
+    def license_info_from_installed_path(library, pypi_definition)
       python_version, extracted_path = env_info
 
+      library_path = package_path(extracted_path, python_version, library[:name], library[:version])
+      pypi_path = package_path(extracted_path, python_version, pypi_definition['name'], library[:version])
+
       install_path = Pathname.new(
-        package_path(extracted_path, python_version, library[:name], library[:version])
+        if File.directory?(library_path)
+          library_path
+        elsif File.directory?(library_path.gsub('Python', 'python'))
+          library_path.gsub('Python', 'python')
+        elsif File.directory?(pypi_path)
+          pypi_path
+        else
+          pypi_path.gsub('Python', 'python')
+        end
       )
 
       { install_path: install_path, groups: groups(library[:name]) } if licenses(install_path).any?

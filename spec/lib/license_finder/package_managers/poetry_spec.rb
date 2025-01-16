@@ -2,7 +2,6 @@
 
 require 'spec_helper'
 
-
 module LicenseFinder
   describe Poetry do
     subject { Poetry.new(options) }
@@ -12,12 +11,13 @@ module LicenseFinder
 
     describe '#current_packages' do
       def definition_for(item)
+        name = item[:name] == 'markupsafe' ? 'MarkupSafe' : item[:name]
         JSON.pretty_generate(
           "info": {
             "author": '',
             "home_page": '',
             "license": item[:license],
-            "name": item[:name],
+            "name": name,
             "summary": '',
             "version": item[:version]
           }
@@ -30,23 +30,25 @@ module LicenseFinder
 
       let(:dependencies) do
         [
-          { name: 'colorama', version: '0.4.6', license: 'BSD 3-Clause', groups: ['dev'] },
-          { name: 'iniconfig', version: '2.0.0', license: 'MIT', groups: ['dev'] },
-          { name: 'packaging', version: '24.2', license: 'BSD or Apache License, Version 2.0', groups: ['dev'] },
+          { name: 'colorama', version: '0.4.6', license: 'BSD 3-Clause', groups: %w[main test] },
+          { name: 'iniconfig', version: '2.0.0', license: 'MIT', groups: ['test'] },
+          { name: 'markupsafe', version: '3.0.2', license: 'New BSD', groups: ['dev'] },
+          { name: 'packaging', version: '24.2', license: 'BSD or Apache License, Version 2.0', groups: ['test'] },
           { name: 'pluggy', version: '1.5.0', license: 'MIT', groups: ['dev'] },
           { name: 'pytest', version: '8.3.4', license: 'MIT', groups: ['dev'] },
-          { name: 'six', version: '1.17.0', license: 'MIT', groups: %w[default dev] },
+          { name: 'six', version: '1.17.0', license: 'MIT', groups: ['main'] }
         ]
       end
 
       let(:expected_dependencies) do
         [
-          { name: 'colorama', version: '0.4.6', license: ['New BSD'], groups: %w[main dev] },
-          { name: 'iniconfig', version: '2.0.0', license: ['MIT'], groups: %w[main dev] },
-          { name: 'packaging', version: '24.2', license: ['Apache 2.0', 'Simplified BSD'], groups: ['dev'] },
+          { name: 'colorama', version: '0.4.6', license: ['New BSD'], groups: %w[main test] },
+          { name: 'iniconfig', version: '2.0.0', license: ['MIT'], groups: ['test'] },
+          { name: 'markupsafe', version: '3.0.2', license: ['New BSD'], groups: ['dev'] },
+          { name: 'packaging', version: '24.2', license: ['Apache 2.0', 'Simplified BSD'], groups: ['test'] },
           { name: 'pluggy', version: '1.5.0', license: ['MIT'], groups: ['test'] },
           { name: 'pytest', version: '8.3.4', license: ['MIT'], groups: ['test'] },
-          { name: 'six', version: '1.17.0', license: ['MIT'], groups: %w[main dev] }
+          { name: 'six', version: '1.17.0', license: ['MIT'], groups: ['main'] }
         ]
       end
 
@@ -67,6 +69,7 @@ module LicenseFinder
         <<~OUTPUT
           colorama              0.4.6         colorama desc
           iniconfig             2.0.0         iniconfig desc
+          markupsafe            3.0.2         markupsafe desc
           packaging             24.2          packaging desc
           pluggy                1.5.0         pluggy des
           pytest                8.3.4         pytest desc
@@ -117,14 +120,11 @@ module LicenseFinder
           actual = subject.current_packages.map do |package|
             [package.name, package.version, package.licenses.map(&:name), package.groups]
           end
-          expected = [
-            ['colorama', '0.4.6', ['unknown'], []],
-            ['iniconfig', '2.0.0', ['MIT'], %w[main dev]],
-            ['packaging', '24.2', ['Apache 2.0', 'Simplified BSD'], ['dev']],
-            ['pluggy', '1.5.0', ['MIT'], ['test']],
-            ['pytest', '8.3.4', ['MIT'], ['test']],
-            ['six', '1.17.0', ['MIT'], %w[main dev]]
-          ]
+          expected = expected_dependencies.map do |dependency|
+            next ['colorama', '0.4.6', ['unknown'], []] if dependency[:name] == 'colorama'
+
+            [dependency[:name], dependency[:version], dependency[:license], dependency[:groups]]
+          end
 
           expect(actual).to match_array(expected)
         end
@@ -139,15 +139,14 @@ module LicenseFinder
           actual = subject.current_packages.map do |package|
             [package.name, package.version, package.licenses.map(&:name), package.groups]
           end
-          expect(actual).to match_array(
-            [
-              ['colorama', '0.4.6', ['New BSD'], %w[main dev]],
-              ['iniconfig', '2.0.0', ['MIT'], %w[main dev]],
-              ['pytest', '8.3.4', ['MIT'], ['test']],
-              ['pluggy', '1.5.0', ['MIT'], ['test']],
-              ['six', '1.17.0', ['MIT'], %w[main dev]]
-            ]
-          )
+          expected = expected_dependencies.each_with_object([]) do |dependency, dependencies|
+            next unless dependency[:groups] != ['dev']
+
+            dependencies.push(
+              [dependency[:name], dependency[:version], dependency[:license], dependency[:groups]]
+            )
+          end
+          expect(actual).to match_array(expected)
         end
       end
     end
