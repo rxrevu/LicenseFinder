@@ -8,11 +8,13 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.12"
 six = "^1.17.0"
-
+colorama = "0.4.6"
 
 [tool.poetry.group.dev.dependencies]
+markupsafe = "3.0.2"
+
+[tool.poetry.group.test.dependencies]
 pytest = "^8.3.4"
-six = "1.17.0"
 
 [build-system]
 requires = ["poetry-core"]
