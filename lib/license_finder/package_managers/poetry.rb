@@ -73,22 +73,12 @@ module LicenseFinder
         next if ignore_due_to_group?(library[:name])
 
         pypi_definition = PyPI.definition(library[:name], library[:version])
-
-        puts("\n\t* * * * *\t#{library[:name]} =>? #{pypi_definition['name']}")
-
         installed_license_info = license_info_from_installed_path(library, pypi_definition)
-
-        puts("\tInstalled License Info:\t#{installed_license_info}")
         next library.merge(installed_license_info) if installed_license_info
 
-        pypi_definition = PyPI.definition(library[:name], library[:version])
-
         github_license_info = license_info_from_github(pypi_definition)
-
-        puts("\tGithub License Info:\t#{github_license_info}")
         next library.merge(github_license_info) if github_license_info
 
-        puts("\tPyPI License Info:\t#{pypi_definition}")
         library.merge(license_info_from_spec(pypi_definition))
       end
     end
