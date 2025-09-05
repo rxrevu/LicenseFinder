@@ -41,7 +41,7 @@ BUILD SUCCESSFUL in 0s
       it 'uses custom subject command, if provided' do
         subject = Gradle.new(gradle_command: 'subjectfoo', project_path: Pathname('/fake/path'))
         expect(Dir).to receive(:chdir).with(Pathname('/fake/path')) { |&block| block.call }
-        expect(SharedHelpers::Cmd).to receive(:run).with('subjectfoo downloadLicenses').and_return(['', '', cmd_success])
+        expect(SharedHelpers::Cmd).to receive(:run).with('subjectfoo licenseReport').and_return(['', '', cmd_success])
         subject.current_packages
       end
 
@@ -49,9 +49,9 @@ BUILD SUCCESSFUL in 0s
         subject = Gradle.new(project_path: Pathname('/Users/foo/bar'))
         expect(Dir).to receive(:chdir).with(Pathname('/Users/foo/bar')) { |&block| block.call }
         if Platform.windows?
-          expect(SharedHelpers::Cmd).to receive(:run).with('gradle.bat downloadLicenses').and_return(['', '', cmd_success])
+          expect(SharedHelpers::Cmd).to receive(:run).with('gradle.bat licenseReport').and_return(['', '', cmd_success])
         else
-          expect(SharedHelpers::Cmd).to receive(:run).with('gradle downloadLicenses').and_return(['', '', cmd_success])
+          expect(SharedHelpers::Cmd).to receive(:run).with('gradle licenseReport').and_return(['', '', cmd_success])
         end
         subject.current_packages
       end
@@ -59,10 +59,23 @@ BUILD SUCCESSFUL in 0s
       context 'when dependencies are found' do
         let(:content) do
           [
-            "<dependencies>
-              <dependency name='org.springframework:spring-aop:4.0.1.RELEASE'></dependency>
-              <dependency name='org.springframework:spring-core:4.0.1.RELEASE'></dependency>
-            </dependencies>"
+            JSON.dump(
+              [
+                {
+                  mavenCoordinates: {
+                    groupId: 'org.springframework',
+                    artifactId: 'spring-aop',
+                    version: '4.0.1.RELEASE'
+                  }
+                }, {
+                  mavenCoordinates: {
+                    groupId: 'org.springframework',
+                    artifactId: 'spring-core',
+                    version: '4.0.1.RELEASE'
+                  }
+                }
+              ]
+            )
           ]
         end
 
@@ -82,26 +95,44 @@ BUILD SUCCESSFUL in 0s
       context 'when multiple licenses exist' do
         let(:content) do
           [
-            "<dependencies>
-               <dependency name=''>
-                 <license name='License 1'/>
-                 <license name='License 2'/>
-               </dependency>
-            </dependencies>"
+            JSON.dump(
+              [
+                {
+                  mavenCoordinates: {
+                    groupId: '',
+                    artifactId: '',
+                    version: ''
+                  },
+                  licenses: [
+                    { spdxLicenseIdentifier: 'License 1' },
+                    { spdxLicenseIdentifier: 'License 2' }
+                  ]
+                }
+              ]
+            )
           ]
         end
 
         it 'lists all dependencies' do
-          expect(subject.current_packages.first.licenses.map(&:name)).to eq ['License 1', 'License 2']
+          package = subject.current_packages.first
+          expect(package.licenses.map(&:name)).to eq ['License 1', 'License 2']
         end
       end
 
       context 'when no licenses exist' do
         let(:content) do
           [
-            "<dependencies>
-              <dependency name=''></dependency>
-            </dependencies>"
+            JSON.dump(
+              [
+                {
+                  mavenCoordinates: {
+                    groupId: 'org.springframework',
+                    artifactId: 'spring-aop',
+                    version: '4.0.1.RELEASE'
+                  }
+                }
+              ]
+            )
           ]
         end
 
@@ -110,15 +141,59 @@ BUILD SUCCESSFUL in 0s
         end
       end
 
+      context 'when no spdx identifier provided' do
+        let(:content) do
+          [
+            JSON.dump(
+              [
+                {
+                  mavenCoordinates: {
+                    groupId: 'com.auth0',
+                    artifactId: 'auth0',
+                    version: '2.24.0'
+                  },
+                  licenses: [
+                    {
+                      spdxIdentifier: nil,
+                      name: 'The MIT License (MIT)'
+                    }
+                  ]
+                }
+              ]
+            )
+          ]
+        end
+
+        it 'returns the license' do
+          expect(subject.current_packages.first.licenses.map(&:name)).to eq ['MIT']
+        end
+      end
+
       context 'when multiple license files exist' do
         let(:content) do
           [
-            "<dependencies>
-              <dependency name='junit:junit:4.12'></dependency>
-            </dependencies>",
-            "<dependencies>
-              <dependency name='org.mockito:mockito-core:1.9.5'></dependency>
-            </dependencies>"
+            JSON.dump(
+              [
+                {
+                  mavenCoordinates: {
+                    groupId: 'junit',
+                    artifactId: 'junit',
+                    version: '4.12'
+                  }
+                }
+              ]
+            ),
+            JSON.dump(
+              [
+                {
+                  mavenCoordinates: {
+                    groupId: 'org.mockito',
+                    artifactId: 'mockito-core',
+                    version: '1.9.5'
+                  }
+                }
+              ]
+            )
           ]
         end
 
@@ -129,15 +204,39 @@ BUILD SUCCESSFUL in 0s
         context 'and there are duplicate dependencies' do
           let(:content) do
             [
-              "<dependencies>
-                 <dependency name='junit:junit:4.12'></dependency>
-               </dependencies>",
-              "<dependencies>
-                 <dependency name='org.mockito:mockito-core:1.9.5'></dependency>
-               </dependencies>",
-              "<dependencies>
-                 <dependency name='org.mockito:mockito-core:1.9.5'></dependency>
-               </dependencies>"
+              JSON.dump(
+                [
+                  {
+                    mavenCoordinates: {
+                      groupId: 'junit',
+                      artifactId: 'junit',
+                      version: '4.12'
+                    }
+                  }
+                ]
+              ),
+              JSON.dump(
+                [
+                  {
+                    mavenCoordinates: {
+                      groupId: 'org.mockito',
+                      artifactId: 'mockito-core',
+                      version: '1.9.5'
+                    }
+                  }
+                ]
+              ),
+              JSON.dump(
+                [
+                  {
+                    mavenCoordinates: {
+                      groupId: 'org.mockito',
+                      artifactId: 'mockito-core',
+                      version: '1.9.5'
+                    }
+                  }
+                ]
+              )
             ]
           end
 

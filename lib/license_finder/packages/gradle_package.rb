@@ -3,18 +3,15 @@
 module LicenseFinder
   class GradlePackage < Package
     def initialize(spec, options = {})
-      name = spec['name']
-      if name.scan(':').size >= 1
-        group, name, version = name.split(':')
-      else
-        version = 'unknown'
-      end
+      group = spec['mavenCoordinates']['groupId']
+      name = spec['mavenCoordinates']['artifactId']
+      version = spec['mavenCoordinates']['version']
 
       name = options[:include_groups] ? "#{group}:#{name}" : name
 
-      licenses = Array(spec['license'])
-                 .map { |l| l['name'] }
-                 .reject { |reject_name| reject_name == 'No license found' }
+      licenses = spec['licenses']
+        &.map { |l| l['spdxLicenseIdentifier'] || l['name'] }
+        &.reject { |reject_name| reject_name == 'No license found' }
 
       super(name, version, options.merge(spec_licenses: licenses))
     end

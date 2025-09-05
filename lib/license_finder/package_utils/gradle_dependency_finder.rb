@@ -8,7 +8,7 @@ module LicenseFinder
 
     def dependencies
       Pathname
-        .glob(@project_path.join('**', 'dependency-license.xml'))
+        .glob(@project_path.join('**', 'licenses.json'))
         .map(&:read)
     end
   end
