@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'xmlsimple'
 require 'with_env'
 require 'license_finder/package_utils/gradle_dependency_finder'
 
@@ -14,17 +13,16 @@ module LicenseFinder
 
     def current_packages
       WithEnv.with_env('TERM' => 'dumb') do
-        command = "#{@command} downloadLicenses"
+        command = "#{@command} licenseReport"
         _stdout, stderr, status = Dir.chdir(project_path) { Cmd.run(command) }
         raise "Command '#{command}' failed to execute: #{stderr}" unless status.success?
 
         dependencies = GradleDependencyFinder.new(project_path).dependencies
-        packages = dependencies.flat_map do |xml_file|
-          options = { 'GroupTags' => { 'dependencies' => 'dependency' } }
-          contents = XmlSimple.xml_in(xml_file, options).fetch('dependency', [])
-          contents.map do |dep|
+        packages = dependencies.flat_map do |json_file|
+          contents = JSON.parse(json_file)
+          contents.map { |dep|
             GradlePackage.new(dep, logger: logger, include_groups: @include_groups)
-          end
+          }
         end
         packages.uniq
       end

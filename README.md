@@ -28,17 +28,17 @@ and give you an actionable exception report.
 
 | Project Type | Package Manager | Tested on Version |
 | ------------ |-----------------|------------------:|
-| Ruby Gems    | bundler         | 2.3.7 |
-| Python 2.7 Eggs  | pip2            | 19.0.2 |
-| Python 3.5 Eggs  | pip3            | 20.0.2 |
-| Node.js      | npm             | 6.4.1 |
-| Bower        | bower           | 1.8.4 |
-| Nuget (without license discovery) | nuget           | 4.7.1.5393 |
-| Godep        | Godep           | 80 |
-| Go workspace | Go lang         | 1.11.5 |
-| Go modules   | Go lang         | 1.14.3 |
-| Java         | maven           | 3.6.0 |
-| Java         | gradle          | 5.6.4 |
+| Ruby Gems    | bundler         |             2.3.7 |
+| Python 2.7 Eggs  | pip2            |            19.0.2 |
+| Python 3.5 Eggs  | pip3            |            20.0.2 |
+| Node.js      | npm             |             6.4.1 |
+| Bower        | bower           |             1.8.4 |
+| Nuget (without license discovery) | nuget           |        4.7.1.5393 |
+| Godep        | Godep           |                80 |
+| Go workspace | Go lang         |            1.11.5 |
+| Go modules   | Go lang         |            1.14.3 |
+| Java         | maven           |             3.6.0 |
+| Java         | gradle          |            8.4.13 |
 
 ### Experimental project types
 
@@ -500,19 +500,17 @@ enabled_package_managers:
 ### Gradle Projects
 
 `license_finder` supports both Gradle 1.x and Gradle 2.x. You need to have installed
-the license-gradle-plugin in your project:
-[https://github.com/hierynomus/license-gradle-plugin](https://github.com/hierynomus/license-gradle-plugin)
+the gradle-licenses-plugin in your project: `id("com.cmgapps.licenses") version "5.1.0"`
+[https://github.com/chrimaeon/gradle-licenses-plugin](https://github.com/chrimaeon/gradle-licenses-plugin)
 
-By default, `license_finder` will report on Gradle's "runtime" dependencies. If
-you want to generate a report for some other dependency configuration (e.g.
-Android projects will sometimes specify their meaningful dependencies in the
-"compile" group), you can specify it in your project's `build.gradle`:
+And configure it to output JSON in build.gradle:
 
 ```
-// Must come *after* applying the appropriate plugin from [https://github.com/hierynomus/license-gradle-plugin](https://github.com/hierynomus/license-gradle-plugin)
-
-downloadLicenses {
-  dependencyConfiguration "compile"
+licenses {
+    reports {
+        html.enabled.set(false)
+        json.enabled.set(true)
+    }
 }
 ```
 
